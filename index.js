@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Hono } from 'hono';
 import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
+import { cors } from 'hono/cors'
 
 // エンジンごとのルーターをインポート
 import { voicevoxRouter } from './engine/voicevox.js';
@@ -18,27 +19,10 @@ import { coeiroinkOpenApi } from './config/openapi-coeiroink.js';
 
 const app = new Hono();
 
+// CORSミドルウェア
+app.use(cors());
+
 // APIキー認証ミドルウェア
-app.use(async (c, next) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.error("API_KEY is not defined in .env file.");
-    return c.json({ error: "Server configuration error: API key not set." }, 500);
-  }
-
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: "Unauthorized: Bearer token missing or malformed." }, 401);
-  }
-
-  const token = authHeader.substring(7); // 'Bearer ' の後のトークンを取得
-  if (token !== apiKey) {
-    return c.json({ error: "Unauthorized: Invalid API key." }, 401);
-  }
-
-  await next();
-});
-
 // OpenAPIスキーマ定義を結合
 const openApiDocument = {
   ...baseOpenApiDocument,
@@ -52,6 +36,27 @@ const openApiDocument = {
 
 app.get('/swagger', swaggerUI({ url: '/doc' }));
 app.get('/doc', (c) => c.json(openApiDocument));
+
+// APIキー認証ミドルウェア
+app.use(async (c, next) => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    console.error("Server configuration error: API_KEY is not defined.");
+    return c.json({ error: "サーバー設定エラーが発生しました。" }, 500);
+  }
+
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return c.json({ error: "認証情報が不足しているか、形式が正しくありません。" }, 401);
+  }
+
+  const token = authHeader.substring(7); // 'Bearer ' の後のトークンを取得
+  if (token !== apiKey) {
+    return c.json({ error: "無効なAPIキーです。" }, 401);
+  }
+
+  await next();
+});
 
 // 各エンジンのルートを登録
 app.route('/voice-synthesis-voicevox', voicevoxRouter);

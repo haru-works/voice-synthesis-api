@@ -1,7 +1,13 @@
 import ffmpeg from 'fluent-ffmpeg';
 import { Readable, Writable } from 'stream';
+import { parentPort } from 'worker_threads';
 
-export const convertWavToOgg = (wavBuffer) => {
+// ここにFFmpegの実行ファイルへの絶対パスを設定してください
+// 例: ffmpeg.setFfmpegPath('C:\\ffmpeg\\bin\\ffmpeg.exe');
+// ご自身の環境に合わせてパスを修正してください。
+ffmpeg.setFfmpegPath('C:\\FFmpeg\\bin\\ffmpeg.exe');
+
+const convertWavToOgg = (wavBuffer) => {
   return new Promise((resolve, reject) => {
     const input = new Readable();
     input.push(wavBuffer);
@@ -27,3 +33,19 @@ export const convertWavToOgg = (wavBuffer) => {
       .pipe(outputStream);
   });
 };
+
+// ワーカーからのメッセージをリッスン
+if (parentPort) {
+  parentPort.on('message', async (message) => {
+    if (message.type === 'convert') {
+      try {
+        const oggBuffer = await convertWavToOgg(Buffer.from(message.wavBuffer));
+        parentPort.postMessage({ type: 'result', oggBuffer: oggBuffer.buffer }, [oggBuffer.buffer]);
+      } catch (error) {
+        parentPort.postMessage({ type: 'error', error: error.message });
+      }
+    }
+  });
+}
+
+export { convertWavToOgg };
