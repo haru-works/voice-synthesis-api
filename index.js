@@ -46,8 +46,8 @@ const openApiDocument = {
   },
 };
 
-app.get('/swagger', swaggerUI({ url: '/doc' }));
-app.get('/doc', (c) => c.json(openApiDocument));
+//app.get('/swagger', swaggerUI({ url: '/doc' }));
+//app.get('/doc', (c) => c.json(openApiDocument));
 
 // APIキー認証ミドルウェア
 app.use(async (c, next) => {
@@ -69,6 +69,9 @@ app.use(async (c, next) => {
 
   await next();
 });
+
+app.get('/swagger', swaggerUI({ url: '/doc' }));
+app.get('/doc', (c) => c.json(openApiDocument));
 
 // 各エンジンのルートを登録
 app.route('/voice-synthesis-voicevox', voicevoxRouter);
