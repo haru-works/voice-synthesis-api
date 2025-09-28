@@ -3,9 +3,12 @@ import { Readable, Writable } from 'stream';
 import { parentPort } from 'worker_threads';
 
 // ここにFFmpegの実行ファイルへの絶対パスを設定してください
-// 例: ffmpeg.setFfmpegPath('C:\\ffmpeg\\bin\\ffmpeg.exe');
 // ご自身の環境に合わせてパスを修正してください。
-ffmpeg.setFfmpegPath('C:\\FFmpeg\\bin\\ffmpeg.exe');
+if (process.platform === 'win32') {
+  ffmpeg.setFfmpegPath('C:\\FFmpeg\\bin\\ffmpeg.exe');
+} else if (process.platform === 'linux') {
+  ffmpeg.setFfmpegPath('/usr/bin/ffmpeg');
+}
 
 const convertWavToOgg = (wavBuffer) => {
   return new Promise((resolve, reject) => {
