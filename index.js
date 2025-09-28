@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors'
+import os from 'os';
 
 // エンジンごとのルーターをインポート
 import { voicevoxRouter } from './engine/voicevox.js';
@@ -20,7 +21,18 @@ import { coeiroinkOpenApi } from './config/openapi-coeiroink.js';
 const app = new Hono();
 
 // CORSミドルウェア
-app.use(cors());
+const corsOrigin = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
+const corsMaxAge = process.env.CORS_MAX_AGE ? parseInt(process.env.CORS_MAX_AGE, 10) : 600;
+const serverPort = process.env.SERVER_PORT ? process.env.SERVER_PORT : 8888;
+
+app.use(
+  cors({
+    origin: corsOrigin,
+    allowHeaders: ['Content-Type', 'Authorization'],
+    allowMethods: ['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'],
+    maxAge: corsMaxAge,
+  })
+);
 
 // APIキー認証ミドルウェア
 // OpenAPIスキーマ定義を結合
@@ -65,9 +77,21 @@ app.route('/voice-synthesis-aivis', aivisRouter);
 app.route('/voice-synthesis-coeiroink', coeiroinkRouter);
 
 // サーバー起動
-const port = 8888;
-console.log(`Server is running on http://localhost:${port}`);
-
-serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`Server listening on http://localhost:${info.port}`);
+serve({ fetch: app.fetch, port:serverPort }, (info) => {
+  console.log(`Voice Synthesis API Server Start!`);
+  console.log(`corsOrigin:`,corsOrigin);
+  const networkInterfaces = os.networkInterfaces();
+  let ipAddress = 'localhost';
+  for (const devName in networkInterfaces) {
+    const iface = networkInterfaces[devName];
+    for (let i = 0; i < iface.length; i++) {
+      const alias = iface[i];
+      if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
+        ipAddress = alias.address;
+        break;
+      }
+    }
+    if (ipAddress !== 'localhost') break;
+  }
+  console.log(`Voice Synthesis API Server listening on http://${ipAddress}:${info.port}`);
 });
