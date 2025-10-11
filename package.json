@@ -1,6 +1,6 @@
 {
   "name": "voice-synthesis-api",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "description": "Discord voice bot with multiple TTS engines.",
   "main": "index.js",
   "type": "module",
