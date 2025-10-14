@@ -11,7 +11,7 @@ export const aivisRouter = new Hono();
 const synthesisSchema = z.object({
   text: z.string().min(1, 'textは必須です。'),
   speaker: z.number().int().min(0, 'speakerは0以上の整数である必要があります。'),
-  speakerUuid: z.string().uuid('speakerUuidは有効なUUIDである必要があります。').optional(),
+  speakerUuid: z.string().optional(),
   speedScale: z.number().min(0.5).max(3.0).optional(),
   pitchScale: z.number().min(-0.25).max(0.25).optional(),
   intonationScale: z.number().min(-5.0).max(5.0).optional(),
