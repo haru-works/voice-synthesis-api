@@ -4,6 +4,12 @@ import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors'
 import os from 'os';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // エンジンごとのルーターをインポート
 import { voicevoxRouter } from './engine/voicevox.js';
@@ -13,10 +19,6 @@ import { coeiroinkRouter } from './engine/coeiroink.js';
 
 // OpenAPIスキーマ定義をインポート
 import { baseOpenApiDocument } from './config/openapi-base.js';
-import { voicevoxOpenApi } from './config/openapi-voicevox.js';
-import { voicevoxNemoOpenApi } from './config/openapi-voicevox-nemo.js';
-import { aivisOpenApi } from './config/openapi-aivis.js';
-import { coeiroinkOpenApi } from './config/openapi-coeiroink.js';
 
 const app = new Hono();
 
@@ -35,45 +37,49 @@ app.use(
 );
 
 // APIキー認証ミドルウェア
-// OpenAPIスキーマ定義を結合
-const openApiDocument = {
-  ...baseOpenApiDocument,
-  paths: {
-    ...voicevoxOpenApi,
-    ...voicevoxNemoOpenApi,
-    ...aivisOpenApi,
-    ...coeiroinkOpenApi,
-  },
-};
-
-app.get('/swagger', swaggerUI({ url: '/doc' }));
-app.get('/doc', (c) => c.json(openApiDocument));
-
-console.log("ここきてる？")
-
-// APIキー認証ミドルウェア
 app.use(async (c, next) => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    console.error("Server configuration error: API_KEY is not defined.");
-    return c.json({ error: "サーバー設定エラーが発生しました。" }, 500);
+    console.error("Server configuration error: API_KEY is not defined. Exiting.");
+    process.exit(1); // APIキーが設定されていない場合はサーバーを終了
   }
 
   const authHeader = c.req.header('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: "認証情報が不足しているか、形式が正しくありません。" }, 401);
+    return c.json({ error: "認証に失敗しました。" }, 401);
   }
 
   const token = authHeader.substring(7); // 'Bearer ' の後のトークンを取得
   if (token !== apiKey) {
-    return c.json({ error: "無効なAPIキーです。" }, 401);
+    return c.json({ error: "認証に失敗しました。" }, 401);
   }
 
   await next();
 });
 
-//app.get('/swagger', swaggerUI({ url: '/doc' }));
-//app.get('/doc', (c) => c.json(openApiDocument));
+// OpenAPIスキーマ定義を動的に結合
+async function loadOpenApiDocuments() {
+  const configPath = path.join(__dirname, 'config');
+  const files = await fs.readdir(configPath);
+  let combinedPaths = {};
+
+  for (const file of files) {
+    if (file.startsWith('openapi-') && file !== 'openapi-base.js' && file.endsWith('.js')) {
+      const modulePath = path.join(configPath, file);
+      const module = await import(modulePath);
+      const openApiDoc = Object.values(module)[0]; // exportされている最初のオブジェクトを取得
+      combinedPaths = { ...combinedPaths, ...openApiDoc };
+    }
+  }
+  return { ...baseOpenApiDocument, paths: combinedPaths };
+}
+
+// swagger
+app.get('/swagger', swaggerUI({ url: '/doc' }));
+app.get('/doc', async (c) => {
+  const openApiDocument = await loadOpenApiDocuments();
+  return c.json(openApiDocument);
+});
 
 // 各エンジンのルートを登録
 app.route('/voice-synthesis-voicevox', voicevoxRouter);

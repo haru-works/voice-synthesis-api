@@ -1,85 +1,17 @@
-import axios from 'axios';
-import { Hono } from 'hono';
-import { convertWavToOggWithWorker } from '../utils/audioConverterWorker.js';
-import { z } from 'zod';
-import { zValidator } from '@hono/zod-validator';
+import { createEngineRouter } from './common.js';
 
-const COEIROINK_ENGINE_URL = process.env.COEIROINK_ENGINE_URL;
+const COEIROINK_ENGINE_URLS = process.env.COEIROINK_ENGINE_URL ? process.env.COEIROINK_ENGINE_URL.split(',') : [];
+const DEFAULT_SPEAKER_STYLE_ID = process.env.DEFAULT_COEIROINK_SPEAKER_STYLE_ID || "0";
+const DEFAULT_SPEAKER_UUID = process.env.DEFAULT_COEIROINK_SPEAKER_UUID || "3c37646f-3881-5374-2a83-149267990abc";
+const DEFAULT_ENGINE_URL = process.env.DEFAULT_COEIROINK_ENGINE_URL || "http://localhost:50031";
 
-export const coeiroinkRouter = new Hono();
-
-const synthesisSchema = z.object({
-  text: z.string().min(1, 'textは必須です。'),
-  speaker: z.number().int().min(0, 'speakerは0以上の整数である必要があります。'),
-  speakerUuid: z.string().optional(),
-  speedScale: z.number().min(0.5).max(3.0).optional(),
-  pitchScale: z.number().min(-0.25).max(0.25).optional(),
-  intonationScale: z.number().min(-5.0).max(5.0).optional(),
-  volumeScale: z.number().min(0.1).max(5.0).optional(),
-  prePhonemeLength: z.number().min(0).max(1).optional(),
-  postPhonemeLength: z.number().min(0).max(1).optional(),
-  outputSamplingRate: z.number().int().positive().optional(),
-  outputStereo: z.boolean().optional(),
-});
-
-coeiroinkRouter.post('/', zValidator('json', synthesisSchema), async (c) => {
-  try {
-
-    const requestBody = c.req.valid('json');
-    const { text, speaker, speakerUuid, speedScale, pitchScale, intonationScale, volumeScale, prePhonemeLength, postPhonemeLength, outputSamplingRate, outputStereo } = requestBody;
-
-    const synthesisRequestBody = {
-      speakerUuid: speakerUuid,
-      styleId: speaker,
-      text: text,
-      speedScale: speedScale,
-      pitchScale: pitchScale,
-      intonationScale: intonationScale,
-      volumeScale: volumeScale,
-      prePhonemeLength: prePhonemeLength,
-      postPhonemeLength: postPhonemeLength,
-      outputSamplingRate: outputSamplingRate,
-      outputStereo: outputStereo || false,
-    };
-
-    const synthesisResponse = await axios.post(
-      `${COEIROINK_ENGINE_URL}/v1/synthesis`,
-      JSON.stringify(synthesisRequestBody),
-      {
-        responseType: 'arraybuffer',
-        headers: {
-          'Content-Type': 'application/json',
-          'accept': 'audio/wav',
-        },
-        timeout: 10000, // 10秒のタイムアウト
-      }
-    );
-
-    const audioBuffer = synthesisResponse.data;
-
-    // WAVをOGGに変換 (ワーカーを使用)
-    const oggBuffer = await convertWavToOggWithWorker(audioBuffer);
-
-    return new Response(oggBuffer, {
-      headers: {
-        'Content-Type': 'audio/ogg',
-        'Content-Length': oggBuffer.byteLength.toString(),
-      },
-    });
-
-  } catch (error) {
-    console.error('An error occurred in COEIROINK engine:', error.message);
-    if (error.response) {
-      // Axiosのエラーレスポンスがある場合
-      // 外部APIからの詳細なエラーはログに記録し、クライアントには一般的なメッセージを返す
-      console.error('External API response error:', error.response.status, error.response.data);
-      return c.json({ error: `音声合成サービスで問題が発生しました。` }, error.response.status);
-    } else if (error.request) {
-      // リクエストは送信されたがレスポンスがなかった場合
-      return c.json({ error: '音声合成サービスからの応答がありません。' }, 500);
-    } else {
-      // その他のエラー
-      return c.json({ error: '内部サーバーエラーが発生しました。' }, 500);
-    }
-  }
+export const coeiroinkRouter = createEngineRouter({
+  engineUrls: COEIROINK_ENGINE_URLS,
+  engineName: 'COEIROINK',
+  speakersPath: '/v1/speakers',
+  synthesisPath: '/v1/synthesis',
+  audioQueryPath: null, // COEIROINKはaudio_queryがない
+  defaultSpeakerStyleId: DEFAULT_SPEAKER_STYLE_ID,
+  defaultSpeakerUuid: DEFAULT_SPEAKER_UUID,
+  defaultEngineUrl: DEFAULT_ENGINE_URL,
 });
