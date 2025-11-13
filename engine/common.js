@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { convertWavToOggWithWorker } from '../utils/audioConverterWorker.js';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { logInfo, logError, logWarn } from './logger.js';
+import { logInfo, logError, logWarn } from '../utils/logger.js';
 
 // 環境変数を読み込む
 const HEALTH_CHECK_INTERVAL_MS = process.env.HEALTH_CHECK_INTERVAL_MS ? parseInt(process.env.HEALTH_CHECK_INTERVAL_MS, 10) : 60000;

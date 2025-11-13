@@ -16,7 +16,7 @@ import { voicevoxRouter } from './engine/voicevox.js';
 import { voicevoxNemoRouter } from './engine/voicevox-nemo.js';
 import { aivisRouter } from './engine/aivis.js';
 import { coeiroinkRouter } from './engine/coeiroink.js';
-import { logInfo, logError } from './engine/logger.js';
+import { logInfo, logError } from './utils/logger.js';
 
 // OpenAPIスキーマ定義をインポート
 import { baseOpenApiDocument } from './config/openapi-base.js';
