@@ -3,6 +3,11 @@ import { Hono } from 'hono';
 import { convertWavToOggWithWorker } from '../utils/audioConverterWorker.js';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
+import { logInfo, logError, logWarn } from './logger.js';
+
+// 環境変数を読み込む
+const HEALTH_CHECK_INTERVAL_MS = process.env.HEALTH_CHECK_INTERVAL_MS ? parseInt(process.env.HEALTH_CHECK_INTERVAL_MS, 10) : 60000;
+const NUMBER_OF_SHARDS = process.env.NUMBER_OF_SHARDS;
 
 // エンジンURLのヘルス状態を管理するMap
 const engineHealthStatus = new Map(); // Map<string, boolean> (URL -> isHealthy)
@@ -32,10 +37,10 @@ export const synthesisSchema = z.object({
 async function checkEngineHealth(url, speakersPath, engineName) {
   try {
     await axios.get(`${url}${speakersPath}`, { timeout: 3000 }); // 短いタイムアウトでヘルスチェック
-    console.log(`Engine ${engineName} at ${url} is healthy.`);
+    logInfo(`Engine ${engineName} at ${url} is healthy.`);
     return true;
   } catch (error) {
-    console.error(`Engine ${engineName} at ${url} is unhealthy:`, error.message);
+    logError(`Engine ${engineName} at ${url} is unhealthy:`, error.message);
     return false;
   }
 }
@@ -49,7 +54,7 @@ async function checkEngineHealth(url, speakersPath, engineName) {
  */
 export async function initializeEngineSpeakers(engineUrls, engineName, speakersPath) {
   if (engineUrls.length === 0) {
-    console.warn(`${engineName}_ENGINE_URLSが設定されていません。`);
+    logWarn(`${engineName}_ENGINE_URLSが設定されていません。`);
     return [];
   }
 
@@ -72,7 +77,7 @@ export async function initializeEngineSpeakers(engineUrls, engineName, speakersP
           });
         });
       } catch (error) {
-        console.error(`Failed to fetch speakers from ${url} for ${engineName}:`, error.message);
+        logError(`Failed to fetch speakers from ${url} for ${engineName}:`, error.message);
         engineHealthStatus.set(url, false); // スピーカー取得失敗時も不健康とマーク
       }
     }
@@ -81,7 +86,6 @@ export async function initializeEngineSpeakers(engineUrls, engineName, speakersP
   const allSpeakerStylesFlattened = Array.from(uniqueSpeakerStylesMap.values());
   allSpeakerStylesFlattened.sort((a, b) => a.style_id - b.style_id);
 
-  const NUMBER_OF_SHARDS = 3;
   const tempThreeShardedStyles = Array.from({ length: NUMBER_OF_SHARDS }, () => []);
   const stylesPerThreeShard = Math.ceil(allSpeakerStylesFlattened.length / NUMBER_OF_SHARDS);
 
@@ -94,7 +98,7 @@ export async function initializeEngineSpeakers(engineUrls, engineName, speakersP
 
   const shardedSpeakerStyles = [];
   if (engineUrls.length < NUMBER_OF_SHARDS) {
-    console.warn(`${engineName}_ENGINE_URLSの数が${NUMBER_OF_SHARDS}未満です。最初の${engineUrls.length}つのURLにシャードを割り当てます。`);
+    logWarn(`${engineName}_ENGINE_URLSの数が${NUMBER_OF_SHARDS}未満です。最初の${engineUrls.length}つのURLにシャードを割り当てます。`);
   }
 
   for (let i = 0; i < NUMBER_OF_SHARDS; i++) {    const engineUrl = engineUrls[i] || engineUrls[0];
@@ -110,7 +114,9 @@ export async function initializeEngineSpeakers(engineUrls, engineName, speakersP
     });
   }
 
-  console.log(`${engineName}エンジンの初期化が完了しました。`);
+
+
+  logInfo(`${engineName}エンジンの初期化が完了しました。シャード情報:`, shardedSpeakerStyles);
   return shardedSpeakerStyles;
 }
 
@@ -143,7 +149,7 @@ export function createEngineRouter({
   // アプリケーション起動時に初期化関数を実行
   initializeEngineSpeakers(engineUrls, engineName, speakersPath)
     .then(data => { shardedSpeakerStyles = data; })
-    .catch(console.error);
+    .catch(logError);
 
   // 定期的なヘルスチェック
   setInterval(async () => {
@@ -151,7 +157,7 @@ export function createEngineRouter({
       const isHealthy = await checkEngineHealth(url, speakersPath, engineName);
       engineHealthStatus.set(url, isHealthy);
     }
-  }, 30000); // 30秒ごとにヘルスチェック
+  }, HEALTH_CHECK_INTERVAL_MS); // .envで設定されたインターバル、デフォルトは30秒
 
   router.get('/speakers/sharded', (c) => {
     return c.json(shardedSpeakerStyles);
@@ -169,15 +175,20 @@ export function createEngineRouter({
       }
 
       let selectedEngineUrl = healthyEngineUrls[0]; // デフォルトは最初のヘルシーなエンジンURL
+      let selectedShardIndex = -1; // ログ出力用に選択されたシャードのインデックスを保持
 
       // シャーディングされた情報から適切なエンジンURLを検索
-      for (const shard of shardedSpeakerStyles) {
+      for (let i = 0; i < shardedSpeakerStyles.length; i++) {
+        const shard = shardedSpeakerStyles[i];
         const foundStyle = shard.styles.find(style => style.style_id === speaker);
         if (foundStyle && engineHealthStatus.get(foundStyle.engineUrl)) { // ヘルシーなエンジンのみを選択
           selectedEngineUrl = foundStyle.engineUrl;
+          selectedShardIndex = i;
           break;
         }
       }
+
+      logInfo(`Processing synthesis request for speaker ${speaker} with engineName ${engineName} engine ${selectedEngineUrl} (Shard ${selectedShardIndex})`);
 
       const synthesisRequestBody = {
         speedScale: speedScale,
@@ -246,11 +257,12 @@ export function createEngineRouter({
           break;
 
         } catch (error) {
-          console.error(`Attempt ${attempts + 1} failed for speaker ${speaker} with engine ${selectedEngineUrl} (${engineName}):`, error.message);
+          logError(`Attempt ${attempts + 1} failed for speaker ${speaker} with engine ${selectedEngineUrl} (Shard ${selectedShardIndex}) (${engineName}):`, error.message);
           if (attempts === 0) {
-            console.warn('Synthesis failed, retrying with default speaker.');
+            logWarn('Synthesis failed, retrying with default speaker.');
             speaker = defaultSpeakerStyleId;
             selectedEngineUrl = defaultEngineUrl;
+            selectedShardIndex = -1; // デフォルトエンジンに切り替わったため、シャードインデックスをリセット
             if (engineName === 'COEIROINK') {
               speakerUuid = defaultSpeakerUuid;
               synthesisRequestBody.styleId = speaker;
@@ -273,9 +285,9 @@ export function createEngineRouter({
       });
 
     } catch (error) {
-      console.error(`An error occurred in ${engineName} engine:`, error.message);
+      logError(`An error occurred in ${engineName} engine:`, error.message);
       if (error.response) {
-        console.error('External API response error:', error.response.status, error.response.data);
+        logError('External API response error:', error.response.status, error.response.data);
         return c.json({ error: `音声合成サービスで問題が発生しました。` }, error.response.status);
       } else if (error.request) {
         return c.json({ error: '音声合成サービスからの応答がありません。' }, 500);

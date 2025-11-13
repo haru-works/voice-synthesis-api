@@ -16,6 +16,7 @@ import { voicevoxRouter } from './engine/voicevox.js';
 import { voicevoxNemoRouter } from './engine/voicevox-nemo.js';
 import { aivisRouter } from './engine/aivis.js';
 import { coeiroinkRouter } from './engine/coeiroink.js';
+import { logInfo, logError } from './engine/logger.js';
 
 // OpenAPIスキーマ定義をインポート
 import { baseOpenApiDocument } from './config/openapi-base.js';
@@ -40,7 +41,7 @@ app.use(
 app.use(async (c, next) => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    console.error("Server configuration error: API_KEY is not defined. Exiting.");
+    logError("Server configuration error: API_KEY is not defined. Exiting.");
     process.exit(1); // APIキーが設定されていない場合はサーバーを終了
   }
 
@@ -89,8 +90,8 @@ app.route('/voice-synthesis-coeiroink', coeiroinkRouter);
 
 // サーバー起動
 serve({ fetch: app.fetch, port:serverPort }, (info) => {
-  console.log(`Voice Synthesis API Server Start!`);
-  console.log(`corsOrigin:`,corsOrigin);
+  logInfo(`Voice Synthesis API Server Start!`);
+  logInfo(`corsOrigin:`,corsOrigin);
   const networkInterfaces = os.networkInterfaces();
   let ipAddress = 'localhost';
   for (const devName in networkInterfaces) {
@@ -104,5 +105,5 @@ serve({ fetch: app.fetch, port:serverPort }, (info) => {
     }
     if (ipAddress !== 'localhost') break;
   }
-  console.log(`Voice Synthesis API Server listening on http://${ipAddress}:${info.port}`);
+  logInfo(`Voice Synthesis API Server listening on http://${ipAddress}:${info.port}`);
 });
