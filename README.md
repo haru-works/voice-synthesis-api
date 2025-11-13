@@ -37,27 +37,38 @@ npm install
 プロジェクトルートに `.env` ファイルを作成し、必要な環境変数を設定します。
 
 ```env
-# サーバー設定
-SERVER_PORT=8888
+# 各TTSエンジンのURL(カンマ区切りで複数指定可)
+VOICEVOX_ENGINE_URL="http://localhost:50021,http://localhost:50022,…"
+VOICEVOX_NEMO_ENGINE_URL="http://localhost:50121,,http://localhost:50122,…"
+AIVIS_SPEECH_ENGINE_URL="http://localhost:10101,http://localhost:10102,…"
+COEIROINK_ENGINE_URL="http://localhost:50031,http://localhost:50032,…"
 
-# CORS設定 (カンマ区切りで複数指定可)
-CORS_ORIGIN=http://localhost:3000,https://example.com
+# CORS設定(カンマ区切りで複数指定可)
+CORS_ORIGIN="http://localhost1,http://localhost2,…"
 CORS_MAX_AGE=600
 
-# APIキー (次のステップで生成)
+# APIキー (generate-api-key.jsで生成)
 API_KEY=
 
-# 各TTSエンジンのURL (カンマ区切りで複数指定可)
-VOICEVOX_ENGINE_URLS=http://localhost:50021
-VOICEVOX_NEMO_ENGINE_URLS=http://localhost:50022
-AIVIS_ENGINE_URLS=http://localhost:50023
-COEIROINK_ENGINE_URLS=http://localhost:50031
+# サーバーポート
+SERVER_PORT=8888
 
-# シャーディング設定 (通常は変更不要)
-NUMBER_OF_SHARDS=3
+# デフォルト設定 (リトライ時に使用)
+DEFAULT_VOICEVOX_SPEAKER_STYLE_ID="2"
+DEFAULT_VOICEVOX_ENGINE_URL="http://localhost:50021"
+DEFAULT_COEIROINK_SPEAKER_STYLE_ID="0"
+DEFAULT_COEIROINK_SPEAKER_UUID="3c37646f-3881-5374-2a83-149267990abc"
+DEFAULT_COEIROINK_ENGINE_URL="http://localhost:50031"
+
+# FFmpegのパス (環境に合わせて変更)
+# FFMPEG_PATH="/usr/bin/ffmpeg"
+FFMPEG_PATH="C:\\FFmpeg\\bin\\ffmpeg.exe"
 
 # ヘルスチェック間隔 (ミリ秒)
-HEALTH_CHECK_INTERVAL_MS=60000
+HEALTH_CHECK_INTERVAL_MS=180000
+
+# シャーディング設定
+NUMBER_OF_SHARDS=3
 ```
 
 ### 4. APIキーの生成
@@ -122,15 +133,21 @@ Authorization: Bearer <YOUR_API_KEY>
 
 ## 環境変数
 
-| 変数名 | 説明 | デフォルト値 |
+| 変数名 | 説明 | 例 |
 | --- | --- | --- |
 | `SERVER_PORT` | APIサーバーがリッスンするポート番号 | `8888` |
-| `CORS_ORIGIN` | CORSを許可するオリジンのリスト（カンマ区切り） | `[]` |
+| `CORS_ORIGIN` | CORSを許可するオリジン(カンマ区切りで複数指定可) | `http://localhost1,http://localhost2,…` |
 | `CORS_MAX_AGE` | `Access-Control-Max-Age` ヘッダーの値（秒） | `600` |
 | `API_KEY` | 認証に使用するAPIキー | **必須** |
-| `VOICEVOX_ENGINE_URLS` | VOICEVOXエンジンのURLリスト（カンマ区切り） | |
-| `VOICEVOX_NEMO_ENGINE_URLS` | VOICEVOX NEMOエンジンのURLリスト（カンマ区切り） | |
-| `AIVIS_ENGINE_URLS` | AIVISエンジンのURLリスト（カンマ区切り） | |
-| `COEIROINK_ENGINE_URLS` | COEIROINKエンジンのURLリスト（カンマ区切り） | |
+| `VOICEVOX_ENGINE_URL` | VOICEVOXエンジンのURL(カンマ区切りで複数指定可) | `http://localhost:50021,http://localhost:50022,…` |
+| `VOICEVOX_NEMO_ENGINE_URL` | VOICEVOX NEMOエンジンのURL(カンマ区切りで複数指定可) | `http://localhost:50121,http://localhost:50122,…` |
+| `AIVIS_SPEECH_ENGINE_URL` | AIVISエンジンのURL(カンマ区切りで複数指定可) | `http://localhost:10101,http://localhost:10101,…` |
+| `COEIROINK_ENGINE_URL` | COEIROINKエンジンのURL(カンマ区切りで複数指定可) | `http://localhost:50031,http://localhost:50032,…` |
+| `DEFAULT_VOICEVOX_SPEAKER_STYLE_ID` | VOICEVOXのデフォルト話者スタイルID | `2` |
+| `DEFAULT_VOICEVOX_ENGINE_URL` | VOICEVOXのデフォルトエンジンURL | `http://localhost:50021` |
+| `DEFAULT_COEIROINK_SPEAKER_STYLE_ID` | COEIROINKのデフォルト話者スタイルID | `0` |
+| `DEFAULT_COEIROINK_SPEAKER_UUID` | COEIROINKのデフォルト話者UUID | `3c37646f-3881-5374-2a83-149267990abc` |
+| `DEFAULT_COEIROINK_ENGINE_URL` | COEIROINKのデフォルトエンジンURL | `http://localhost:50031` |
+| `FFMPEG_PATH` | FFmpeg実行ファイルのパス | `C:\FFmpeg\bin\ffmpeg.exe` |
+| `HEALTH_CHECK_INTERVAL_MS` | エンジンのヘルスチェックを行う間隔（ミリ秒） | `180000` |
 | `NUMBER_OF_SHARDS` | 話者情報を分割するシャードの数 | `3` |
-| `HEALTH_CHECK_INTERVAL_MS` | エンジンのヘルスチェックを行う間隔（ミリ秒） | `60000` |
