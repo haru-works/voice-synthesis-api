@@ -117,6 +117,106 @@ Authorization: Bearer <YOUR_API_KEY>
 
 - **URL**: `http://localhost:8888/swagger`
 
+### リクエスト例 (curl)
+
+以下は、`curl` を使用して各音声合成APIを呼び出す例です。`YOUR_API_KEY`と、必要に応じてホスト名、ポート番号、リクエスト内容を書き換えてください。
+
+`speaker`、`speakerUuid`は、各エンジンの話者に合わせて設定してください。
+
+#### VOICEVOX
+
+```bash
+curl -X POST 'http://localhost:8888/voice-synthesis-voicevox' \
+--header 'Authorization: Bearer YOUR_API_KEY' \
+--header 'Content-Type: application/json' \
+--header 'accept: audio/ogg' \
+--data-raw '{
+    "text": "こんにちは",
+    "speaker": 2,
+    "speakerUuid" :"7ffcb7ce-00ec-4bdc-82cd-45a8889e43ff",
+    "speedScale": 1.0,
+    "pitchScale": 0.0,
+    "intonationScale": 1.0,
+    "volumeScale": 1.0,
+    "prePhonemeLength": 0,
+    "postPhonemeLength": 0,
+    "outputStereo": true,
+    "outputSamplingRate": 24000
+}' \
+--output output_voicevox.ogg
+```
+
+#### VOICEVOX NEMO
+
+```bash
+curl -X POST 'http://localhost:8888/voice-synthesis-voicevox-nemo' \
+--header 'Authorization: Bearer YOUR_API_KEY' \
+--header 'Content-Type: application/json' \
+--header 'accept: audio/ogg' \
+--data-raw '{
+    "text": "こんにちは",
+    "speaker": 10005,
+    "speakerUuid" :"abccafa5-174f-44d8-b70c-c41eebb3061c",
+    "speedScale": 1.0,
+    "pitchScale": 0.0,
+    "intonationScale": 1.0,
+    "volumeScale": 1.0,
+    "prePhonemeLength": 0,
+    "postPhonemeLength": 0,
+    "outputStereo": true,
+    "outputSamplingRate": 24000
+}' \
+--output output_voicevox_nemo.ogg
+```
+
+#### AivisSpeech
+
+```bash
+curl -X POST 'http://localhost:8888/voice-synthesis-aivisspeech' \
+--header 'Authorization: Bearer YOUR_API_KEY' \
+--header 'Content-Type: application/json' \
+--header 'accept: audio/ogg' \
+--data-raw '{
+    "text": "こんにちは",
+    "speaker": 391794336,
+    "speakerUuid": "452fee2b-d102-4053-bccd-c0f8c265c147",
+    "speedScale": 1.0,
+    "pitchScale": 0.0,
+    "intonationScale": 1.0,
+    "volumeScale": 1.0,
+    "prePhonemeLength": 0,
+    "postPhonemeLength": 0,
+    "outputStereo": true,
+    "outputSamplingRate": 24000
+}' \
+--output output_aivisspeech.ogg
+```
+
+#### COEIROINK
+
+```bash
+curl -X POST 'http://localhost:8888/voice-synthesis-coeiroink' \
+--header 'Authorization: Bearer YOUR_API_KEY' \
+--header 'Content-Type: application/json' \
+--header 'accept: audio/ogg' \
+--data-raw '{
+    "text": "こんこんだこんこんだこんこんだ",
+    "speaker": 90,
+    "speakerUuid": "3c37646f-3881-5374-2a83-149267990abc",
+    "speedScale": 1.0,
+    "pitchScale": 0.0,
+    "intonationScale": 1.0,
+    "volumeScale": 1.0,
+    "prePhonemeLength": 0,
+    "postPhonemeLength": 0,
+    "outputStereo": true,
+    "outputSamplingRate": 24000
+}' \
+--output output_coeiroink.ogg
+```
+
+成功すると、カレントディレクトリに音声ファイル `output_*.ogg` が保存されます。
+
 ## プロジェクト構成
 
 ```
