@@ -4,9 +4,9 @@ const AIVIS_SPEECH_ENGINE_URLS = process.env.AIVIS_SPEECH_ENGINE_URL ? process.e
 const DEFAULT_SPEAKER_STYLE_ID = process.env.DEFAULT_VOICEVOX_SPEAKER_STYLE_ID || "2";
 const DEFAULT_ENGINE_URL = process.env.DEFAULT_VOICEVOX_ENGINE_URL || "http://localhost:50021";
 
-export const aivisRouter = createEngineRouter({
+export const aivisSpeechRouter = createEngineRouter({
   engineUrls: AIVIS_SPEECH_ENGINE_URLS,
-  engineName: 'AIVIS',
+  engineName: 'AivisSpeech',
   speakersPath: '/speakers',
   synthesisPath: '/synthesis',
   audioQueryPath: '/audio_query',

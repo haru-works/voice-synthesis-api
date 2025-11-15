@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 // エンジンごとのルーターをインポート
 import { voicevoxRouter } from './engine/voicevox.js';
 import { voicevoxNemoRouter } from './engine/voicevox-nemo.js';
-import { aivisRouter } from './engine/aivis.js';
+import { aivisSpeechRouter } from './engine/aivisspeech.js';
 import { coeiroinkRouter } from './engine/coeiroink.js';
 import { logInfo, logError } from './utils/logger.js';
 
@@ -85,7 +85,7 @@ app.get('/doc', async (c) => {
 // 各エンジンのルートを登録
 app.route('/voice-synthesis-voicevox', voicevoxRouter);
 app.route('/voice-synthesis-voicevox-nemo', voicevoxNemoRouter);
-app.route('/voice-synthesis-aivis', aivisRouter);
+app.route('/voice-synthesis-aivisspeech', aivisSpeechRouter);
 app.route('/voice-synthesis-coeiroink', coeiroinkRouter);
 
 // サーバー起動

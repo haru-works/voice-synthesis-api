@@ -67,14 +67,27 @@ export async function initializeEngineSpeakers(engineUrls, engineName, speakersP
       try {
         const speakersResponse = await axios.get(`${url}${speakersPath}`, { timeout: 5000 });
         speakersResponse.data.forEach(speaker => {
-          speaker.styles.forEach(style => {
-            uniqueSpeakerStylesMap.set(style.id, {
-              style_id: style.id,
-              style_name: style.name,
-              speaker_uuid: speaker.speaker_uuid,
-              speaker_name: speaker.name,
+          if (engineName === 'COEIROINK') {
+            // COEIROINK specific mapping
+            speaker.styles.forEach(style => {
+              uniqueSpeakerStylesMap.set(style.styleId, {
+                style_id: style.styleId,
+                style_name: style.styleName,
+                speaker_uuid: speaker.speakerUuid,
+                speaker_name: speaker.speakerName,
+              });
             });
-          });
+          } else {
+            // For other engines
+            speaker.styles.forEach(style => {
+              uniqueSpeakerStylesMap.set(style.id, {
+                style_id: style.id,
+                style_name: style.name,
+                speaker_uuid: speaker.speaker_uuid,
+                speaker_name: speaker.name,
+              });
+            });
+          }
         });
       } catch (error) {
         logError(`Failed to fetch speakers from ${url} for ${engineName}:`, error.message);
@@ -103,13 +116,16 @@ export async function initializeEngineSpeakers(engineUrls, engineName, speakersP
 
   for (let i = 0; i < NUMBER_OF_SHARDS; i++) {    const engineUrl = engineUrls[i] || engineUrls[0];
     shardedSpeakerStyles.push({
+      shardIndex: i,
       engineUrl: engineUrl,
+      engineName: engineName,
       styles: tempThreeShardedStyles[i].map(style => ({
         style_id: style.style_id,
         style_name: style.style_name,
         speaker_uuid: style.speaker_uuid,
         speaker_name: style.speaker_name,
-        engineUrl: engineUrl
+        engineUrl: engineUrl,
+        shardIndex: i
       }))
     });
   }

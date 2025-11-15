@@ -1,6 +1,6 @@
 # Voice Synthesis API
 
-複数のTTS（Text-to-Speech）エンジンを統一されたインターフェースで利用するためのラッパーAPIです。Honoフレームワークをベースに構築されており、OpenAPIによるドキュメント生成、APIキー認証、複数エンジンへの負荷分散（シャーディング）機能などを提供します。
+複数のTTS（Text-to-Speech）エンジンを統一されたインターフェースで利用するためのラッパーAPIです。Honoフレームワークをベースに構築しています。OpenAPIによるドキュメント生成、APIキー認証、複数エンジンへの負荷分散（シャーディング）機能などを提供します。
 
 ## 特徴
 
@@ -8,7 +8,7 @@
   - VOICEVOX
   - VOICEVOX NEMO
   - COEIROINK
-  - AIVIS
+  - AivisSpeech
 - **統一されたAPI**: 各エンジンの差異を吸収し、共通のフォーマットでリクエストが可能です。
 - **APIドキュメント**: Swagger UIによるインタラクティブなAPIドキュメントを自動生成します (`/swagger`)。
 - **認証**: `Bearer` トークンによるAPIキー認証機能を備えています。
@@ -97,7 +97,7 @@ npm start
 
 - `POST /voice-synthesis-voicevox`
 - `POST /voice-synthesis-voicevox-nemo`
-- `POST /voice-synthesis-aivis`
+- `POST /voice-synthesis-aivisspeech`
 - `POST /voice-synthesis-coeiroink`
 
 リクエストボディの詳細は、後述のAPIドキュメントを参照してください。
@@ -141,7 +141,7 @@ Authorization: Bearer <YOUR_API_KEY>
 | `API_KEY` | 認証に使用するAPIキー | **必須** |
 | `VOICEVOX_ENGINE_URL` | VOICEVOXエンジンのURL(カンマ区切りで複数指定可) | `http://localhost:50021,http://localhost:50022,…` |
 | `VOICEVOX_NEMO_ENGINE_URL` | VOICEVOX NEMOエンジンのURL(カンマ区切りで複数指定可) | `http://localhost:50121,http://localhost:50122,…` |
-| `AIVIS_SPEECH_ENGINE_URL` | AIVISエンジンのURL(カンマ区切りで複数指定可) | `http://localhost:10101,http://localhost:10101,…` |
+| `AIVIS_SPEECH_ENGINE_URL` | AivisSpeechエンジンのURL(カンマ区切りで複数指定可) | `http://localhost:10101,http://localhost:10101,…` |
 | `COEIROINK_ENGINE_URL` | COEIROINKエンジンのURL(カンマ区切りで複数指定可) | `http://localhost:50031,http://localhost:50032,…` |
 | `DEFAULT_VOICEVOX_SPEAKER_STYLE_ID` | VOICEVOXのデフォルト話者スタイルID | `2` |
 | `DEFAULT_VOICEVOX_ENGINE_URL` | VOICEVOXのデフォルトエンジンURL | `http://localhost:50021` |
