@@ -102,6 +102,16 @@ npm install -g pm2
 
 #### 2. voice-synthesis-apiをpm2に登録
 
+##### 方法A: ecosystem.config.js を使用（推奨）
+
+`ecosystem.config.js` を使用してpm2に登録します。このファイルには、メモリ設定などの最適化が含まれています。
+
+```bash
+pm2 start ecosystem.config.js
+```
+
+##### 方法B: コマンドラインで直接登録
+
 以下のコマンドで、`index.js` をpm2で実行します。
 
 ```bash
@@ -120,12 +130,26 @@ pm2 logs voice-synthesis-api
 
 #### 3. pm2watchスクリプトの設定（オプション）
 
-`pm2watch.js` は毎日12:00にvoice-synthesis-apiを自動再起動するスクリプトです。
+`pm2watch.cjs` は毎日12:00にvoice-synthesis-apiを自動再起動するスクリプトです。
 
-まず、pm2watchスクリプトをpm2で実行します：
+**注意**: pm2watchスクリプトはCommonJS形式（`.cjs`）で記述されており、プロジェクトのES Module設定に対応するためにこの形式を使用しています。
+
+pm2watch.cjsをpm2で実行する前に、以下のコマンドで動作確認を行うことをお勧めします：
 
 ```bash
-pm2 start pm2watch.js --name pm2watch
+node pm2watch.cjs
+```
+
+問題がなければ、pm2で実行します：
+
+```bash
+pm2 start pm2watch.cjs --name pm2watch
+```
+
+または、`--interpreter` オプションを明示的に指定する場合：
+
+```bash
+pm2 start pm2watch.cjs --interpreter node --name pm2watch
 ```
 
 実行中のプロセス確認：
@@ -168,13 +192,14 @@ pm2 stop all
 pm2 delete all
 ```
 
-### pm2watch.jsについて
+### pm2watch.cjsについて
 
-`pm2watch.js` は以下の機能を提供します：
+`pm2watch.cjs` は以下の機能を提供します：
 
 - **定時実行**: cron式 `0 12 * * *` で毎日12:00にvoice-synthesis-apiを再起動
 - **ログ出力**: 再起動の実行と結果をタイムスタンプ付きで出力
 - **pm2連携**: pm2の `restart` コマンドを使用して実行
+- **CommonJS形式**: プロジェクトのES Module設定に対応するため`.cjs`拡張子を使用
 
 pm2watchスクリプト自体がpm2で管理されているため、pm2watchが停止した場合も自動的に復旧されます。
 

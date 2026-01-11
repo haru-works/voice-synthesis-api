@@ -13,7 +13,7 @@ const restart = () => {
     });
 }
 
-// 毎日12:00に再起動
+// 毎日xx:xxに再起動
 schedule.scheduleJob('0 12 * * *', () => {
     console.log(`[${new Date().toLocaleString('ja-JP')}] Starting scheduled restart...`);
     restart();
