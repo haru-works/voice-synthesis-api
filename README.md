@@ -80,6 +80,8 @@ node generate-api-key.js
 
 ## 実行
 
+### ローカル開発での実行
+
 以下のコマンドでAPIサーバーを起動します。
 
 ```bash
@@ -87,6 +89,94 @@ npm start
 ```
 
 サーバーが起動すると、コンソールに `Voice Synthesis API Server listening on http://...` と表示されます。
+
+### PM2での運用（本番環境）
+
+pm2を使用してバックグラウンドプロセスとして実行し、サーバーの自動再起動などを管理します。
+
+#### 1. pm2 をグローバルインストール
+
+```bash
+npm install -g pm2
+```
+
+#### 2. voice-synthesis-apiをpm2に登録
+
+以下のコマンドで、`index.js` をpm2で実行します。
+
+```bash
+pm2 start index.js --name voice-synthesis-api
+```
+
+プロセスの状態確認：
+```bash
+pm2 status
+```
+
+ログ確認：
+```bash
+pm2 logs voice-synthesis-api
+```
+
+#### 3. pm2watchスクリプトの設定（オプション）
+
+`pm2watch.js` は毎日12:00にvoice-synthesis-apiを自動再起動するスクリプトです。
+
+まず、pm2watchスクリプトをpm2で実行します：
+
+```bash
+pm2 start pm2watch.js --name pm2watch
+```
+
+実行中のプロセス確認：
+```bash
+pm2 status
+```
+
+以下のように2つのプロセスが表示されます：
+```
+id  name                      status      
+0   voice-synthesis-api       online      
+1   pm2watch                  online      
+```
+
+#### 4. pm2の永続化（OSリブート後に自動起動）
+
+pm2の起動スクリプトを生成し、Windowsのタスクスケジューラに登録します：
+
+```bash
+pm2 startup
+```
+
+コマンド実行後の指示に従い、表示されたコマンドを実行してください。その後、以下のコマンドで現在のプロセスを保存します：
+
+```bash
+pm2 save
+```
+
+これにより、OSの再起動後にpm2が自動的に起動し、登録されたプロセスが復旧されます。
+
+#### 5. pm2の停止・削除
+
+すべてのプロセスを停止：
+```bash
+pm2 stop all
+```
+
+すべてのプロセスを削除：
+```bash
+pm2 delete all
+```
+
+### pm2watch.jsについて
+
+`pm2watch.js` は以下の機能を提供します：
+
+- **定時実行**: cron式 `0 12 * * *` で毎日12:00にvoice-synthesis-apiを再起動
+- **ログ出力**: 再起動の実行と結果をタイムスタンプ付きで出力
+- **pm2連携**: pm2の `restart` コマンドを使用して実行
+
+pm2watchスクリプト自体がpm2で管理されているため、pm2watchが停止した場合も自動的に復旧されます。
 
 ## API仕様
 
